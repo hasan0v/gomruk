@@ -9,6 +9,9 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 ## Tamamlanmış funksiyalar
 
 - Azərbaycan dilində tam adaptiv idarəetmə paneli
+- 390, 768, 1024 və 1440 px ekranlar üçün ayrıca yoxlanmış responsive layout və sıfır body overflow
+- Mobil cihazlarda 2×2 KPI düzülüşü, kompakt cinematic hero, böyüdülmüş touch target-lər və oxunaqlı əməliyyat mətnləri
+- Cədvəllər üçün mobil horizontal scroll affordance, optimallaşdırılmış Leaflet control-ları və tam-enli qeydiyyat action-ları
 - VAİS və Maritime Single Window ekranlarından modelləşdirilmiş “Əməliyyat komandası”
 - Port çağırışları, ETA/ETD, risk balı və beş dövlət qurumu üzrə elektron icazə matrisi
 - Gömrük bəyannaməsi, yük manifesti, invoys və CMR üçün normallaşdırılmış sənəd modeli
@@ -125,5 +128,5 @@ Nəticələr `screenshots/` qovluğunda saxlanılır.
 - Platformalar: Vercel və Cloudflare Pages uyğun
 - Build qovluğu: `dist`
 - Framework preset: Vite
-- Status: Lokal prototip hazırdır; MSW/VAİS ekranları, cinematic 3D gəmi vizualları və responsive modallar build, Playwright və brauzer testindən keçib; istehsala yerləşdirilməyib
+- Status: Lokal prototip hazırdır; MSW/VAİS ekranları, cinematic 3D gəmi vizualları, responsive modallar və mobil/tablet səhifələr 390/768/1024/1440 px Playwright auditindən sıfır body overflow və sıfır console xətası ilə keçib; istehsala yerləşdirilməyib
 - Son yenilənmə: 10 iyul 2026
