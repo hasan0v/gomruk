@@ -1,8 +1,21 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
+import { Activity, Radio, ShieldCheck } from 'lucide-react'
+import ShipScene3D from './ShipScene3D'
 
 export default function ShipHero() {
-  return <section className="ship-hero hero-map">
-    <div className="hero-copy"><span className="eyebrow light">VAHİD RƏQƏMSAL KOORDİNASİYA</span><h1>Limandan gömrüyə —<br /><em>vahid məlumat axını</em></h1><p>AIS, liman manifesti və gömrük bəyannaməsi bir platformada avtomatik birləşir.</p><div className="hero-pills"><span>3 proses → 1 ekran</span><span>Kağızsız əməliyyat</span><span>Real-vaxt nəzarət</span></div></div>
-    <div className="hero-sea" aria-hidden="true"><svg viewBox="0 0 600 260"><defs><linearGradient id="sea" x1="0" x2="1"><stop stopColor="#0A4D8C"/><stop offset="1" stopColor="#00B4D8"/></linearGradient></defs><path d="M20 220 C130 30 330 270 570 50" fill="none" stroke="rgba(255,255,255,.25)" strokeWidth="2" strokeDasharray="7 8"/><motion.g initial={{ offsetDistance: '0%' }} animate={{ offsetDistance: '100%' }} transition={{ duration: 10, repeat: Infinity, ease: 'linear' }} style={{ offsetPath: 'path("M20 220 C130 30 330 270 570 50")' }}><path d="M-22 4 L22 4 L13 14 L-14 14 Z" fill="#fff"/><rect x="-9" y="-6" width="19" height="10" rx="2" fill="#F4A261"/><rect x="-4" y="-15" width="10" height="9" fill="#fff"/><motion.ellipse cx="0" cy="18" rx="34" ry="6" fill="rgba(255,255,255,.18)" animate={{ scaleX: [.8, 1.12, .8], opacity: [.35, .75, .35] }} transition={{ duration: 1.5, repeat: Infinity }}/></motion.g><circle cx="570" cy="50" r="7" fill="#F4A261"/><circle cx="570" cy="50" r="16" fill="none" stroke="#F4A261" opacity=".4"><animate attributeName="r" from="10" to="35" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" from=".7" to="0" dur="2s" repeatCount="indefinite"/></circle></svg><span className="alat-label">ƏLƏT LİMANI</span></div>
+  const reduceMotion = useReducedMotion()
+  return <section className="ship-hero hero-map cinematic-hero">
+    <div className="hero-aurora" aria-hidden="true"><i/><i/><i/></div>
+    <motion.div className="hero-copy" initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: .65 }}>
+      <span className="eyebrow light"><i className="hero-live-dot"/> VAHİD RƏQƏMSAL KOORDİNASİYA</span>
+      <h1>Limandan gömrüyə —<br/><em>vahid məlumat axını</em></h1>
+      <p>AIS, liman manifesti və gömrük bəyannaməsi ağıllı əməliyyat nüvəsində real vaxtda birləşir.</p>
+      <div className="hero-pills"><span><Activity/> 3 proses → 1 ekran</span><span><ShieldCheck/> Kağızsız əməliyyat</span><span><Radio/> Real-vaxt nəzarət</span></div>
+      <div className="hero-signal"><span><i/> AIS STREAM</span><b>99.8%</b><small>inteqrasiya sağlamlığı</small></div>
+    </motion.div>
+    <motion.div className="hero-ship-stage" initial={{ opacity: 0, x: 45 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: .15, duration: .8 }}>
+      <ShipScene3D name="SHAHDAG RORO" course="074°"/>
+      <motion.div className="alat-beacon" animate={reduceMotion ? undefined : { scale: [1, 1.08, 1] }} transition={{ duration: 2, repeat: Infinity }}><i/><span><small>TƏYİNAT</small><strong>ƏLƏT LİMANI</strong></span></motion.div>
+    </motion.div>
   </section>
 }

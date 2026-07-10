@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { agencies, cargoDocuments, dataSources, portCalls, type PortCall } from '../data/operationalData'
 import { fetchAlatWeather, fetchExchangeRates, type LiveRates, type LiveWeather } from '../services/liveData'
 import { Button, Card, PageHeader, StatusBadge } from '../components/UI'
+import ShipScene3D from '../components/ShipScene3D'
 
 const clearanceTone = { approved: 'approved', pending: 'pending', review: 'review' } as const
 
@@ -43,7 +44,7 @@ export default function Operations() {
     <PageHeader eyebrow="MARITIME SINGLE WINDOW · VAİS" title="Əməliyyat komandası" description="Gəmi, icazə, manifest və bəyannamələrin vahid canlı idarəetmə ekranı" action={<div className="header-actions"><button className="source-sync" onClick={() => void loadLiveData()}><RefreshCw className={loading ? 'spin' : ''}/><span>{loading ? 'Sinxronlaşdırılır' : updatedAt ? `${updatedAt.toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })} yeniləndi` : 'Yenilə'}</span></button><Button onClick={exportCsv}><Download/> Excel / CSV</Button></div>} />
 
     <section className="ops-live-strip">
-      <article><span className="ops-live-icon"><CloudSun/></span><div><small>Ələt · canlı hava</small><strong>{weather ? `${weather.temperature}°C` : '—'}</strong><em><Wind/> {weather ? `${weather.windSpeed} km/s` : 'Gözlənilir'}</em></div></article>
+      <article><span className="ops-live-icon"><CloudSun/></span><div><small>Ələt · canlı hava</small><strong>{weather ? `${weather.temperature}°C` : '—'}</strong><em><Wind/> {weather ? `${weather.windSpeed} km/saat` : 'Gözlənilir'}</em></div></article>
       <article><span className="ops-live-icon mint"><CircleDollarSign/></span><div><small>USD / AZN</small><strong>{rates ? rates.usdToAzn.toFixed(4) : '—'}</strong><em>İnternet məzənnəsi</em></div></article>
       <article><span className="ops-live-icon amber"><Waves/></span><div><small>Aktiv port çağırışı</small><strong>{portCalls.length}</strong><em>{portCalls.filter(item => item.status === 'Gözləmədə').length} gözləmədə</em></div></article>
       <article><span className="ops-live-icon violet"><Boxes/></span><div><small>Manifest yükü</small><strong>{totalCargo.toLocaleString('az-AZ', { maximumFractionDigits: 0 })} t</strong><em>{cargoDocuments.length} əlaqəli sənəd</em></div></article>
@@ -58,7 +59,8 @@ export default function Operations() {
 
       <AnimatePresence mode="wait">{selected && <motion.aside key={selected.id} className="ops-detail" initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}>
         <Card hover={false}>
-          <header className="detail-hero"><div><span className="detail-kicker">PORT CALL #{selected.id}</span><h2>{selected.vessel}</h2><p>{selected.type} · {selected.flag} · IMO {selected.imo}</p></div><button onClick={() => setSelected(null)} aria-label="Detal panelini bağla"><X/></button><div className="radar-orbit"><span><Ship/></span><i/><i/><i/></div></header>
+          <header className="detail-hero"><div><span className="detail-kicker">PORT CALL #{selected.id}</span><h2>{selected.vessel}</h2><p>{selected.type} · {selected.flag} · IMO {selected.imo}</p></div><button onClick={() => setSelected(null)} aria-label="Detal panelini bağla"><X/></button><span className="detail-live"><i/> AIS LIVE</span></header>
+          <div className="ops-ship-visual"><ShipScene3D compact name={selected.vessel} course="074°"/></div>
           <div className="detail-route"><article><small>Əvvəlki liman</small><strong>{selected.previousPort}</strong></article><span><i/><b>AZBAK</b><i/></span><article><small>Növbəti liman</small><strong>{selected.nextPort}</strong></article></div>
           <div className="detail-metrics"><article><Users/><span><small>Ekipaj / sərnişin</small><strong>{selected.crew} / {selected.passengers}</strong></span></article><article><Boxes/><span><small>Yük / avtomobil</small><strong>{selected.cargoTons.toLocaleString()} t / {selected.vehicles}</strong></span></article><article><FileScan/><span><small>Bəyannamə</small><strong>{selected.declarations}</strong></span></article></div>
           <section className="clearance-panel"><header><div><ShieldAlert/><span><strong>Qurumlararası icazələr</strong><small>Elektron təsdiq matrisi</small></span></div><b>{Object.values(selected.clearances).filter(item => item === 'approved').length}/5</b></header>{Object.entries(selected.clearances).map(([agency, state]) => <div className="clearance-row" key={agency}><span className={`agency-logo ${state}`}>{agency}</span><div><strong>{agencies[agency as keyof typeof agencies].name}</strong><small>{state === 'approved' ? 'Elektron təsdiq alınıb' : state === 'review' ? 'Əlavə yoxlama tələb olunur' : 'Qurum cavabı gözlənilir'}</small></div><em className={state}>{state === 'approved' ? 'Təsdiq' : state === 'review' ? 'Yoxlama' : 'Gözləyir'}</em></div>)}</section>

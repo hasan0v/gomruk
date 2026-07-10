@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Activity, Anchor, BarChart3, Bell, ChevronLeft, ClipboardCheck, FileText, HelpCircle, History, LayoutDashboard, Menu, Moon, Search, Settings, Ship, Sun, X } from 'lucide-react'
+import { Activity, Anchor, BarChart3, Bell, ChevronLeft, ClipboardCheck, FileText, History, LayoutDashboard, Menu, Moon, Search, Settings, Ship, Sun, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore } from '../store/useAppStore'
 import { avtomobiller, beyannameler, gemiler } from '../data/mockData'
@@ -10,7 +10,7 @@ const links = [
   ['/beyannameler', 'Bəyannamələr', FileText], ['/tarixce', 'Tarixçə və qərarlar', History], ['/analitika', 'Analitika', BarChart3], ['/parametrler', 'Parametrlər', Settings],
 ] as const
 
-export default function Layout({ children, onTour }: { children: ReactNode; onTour: () => void }) {
+export default function Layout({ children }: { children: ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
   const { dark, toggleDark, sidebarOpen, setSidebarOpen, commandOpen, setCommandOpen } = useAppStore()
   const navigate = useNavigate(); const location = useLocation()
@@ -24,7 +24,7 @@ export default function Layout({ children, onTour }: { children: ReactNode; onTo
       <button className="collapse-btn" onClick={() => setCollapsed(v => !v)} aria-label="Yan paneli yığ"><ChevronLeft className={collapsed ? 'rotate' : ''} /></button>
     </aside>
     <div className="content-shell">
-      <header className="topbar"><button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menyunu aç"><Menu /></button><button className="global-search" onClick={() => setCommandOpen(true)}><Search size={18} /><span>Gəmi, avtomobil və ya bəyannamə axtar...</span><kbd>⌘ K</kbd></button><div className="top-actions"><button className="icon-btn" aria-label="Bildirişlər"><Bell /><i className="notification-dot">3</i></button><button className="icon-btn" onClick={toggleDark} aria-label="Mövzunu dəyiş">{dark ? <Sun /> : <Moon />}</button><button className="tour-button" onClick={onTour} aria-label="Səhifə turunu başlat"><HelpCircle /></button><div className="profile"><span>AH</span><div><strong>Ali Həsənov</strong><small>Şöbə rəhbəri</small></div></div></div></header>
+      <header className="topbar"><button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Menyunu aç"><Menu /></button><button className="global-search" onClick={() => setCommandOpen(true)}><Search size={18} /><span>Gəmi, avtomobil və ya bəyannamə axtar...</span><kbd>⌘ K</kbd></button><div className="top-actions"><button className="icon-btn" aria-label="Bildirişlər"><Bell /><i className="notification-dot">3</i></button><button className="icon-btn" onClick={toggleDark} aria-label="Mövzunu dəyiş">{dark ? <Sun /> : <Moon />}</button><div className="profile"><span>AH</span><div><strong>Ali Həsənov</strong><small>Şöbə rəhbəri</small></div></div></div></header>
       <AnimatePresence mode="wait"><motion.main key={location.pathname} className="main-content" initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: .24 }}>{children}</motion.main></AnimatePresence>
       <footer>© 2026 Vahid Gömrük-Liman Platforması <span>•</span> Rəhbərlik üçün vizual prototip</footer>
     </div>

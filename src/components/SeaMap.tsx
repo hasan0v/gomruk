@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, Tooltip } from 
 import { Anchor, Gauge, Navigation } from 'lucide-react'
 import { gemiler, limanlar } from '../data/mockData'
 import { Modal, StatusBadge } from './UI'
+import ShipScene3D from './ShipScene3D'
 
 const routeColor = '#00B4D8'
 export default function SeaMap({ compact = false }: { compact?: boolean }) {
@@ -15,6 +16,6 @@ export default function SeaMap({ compact = false }: { compact?: boolean }) {
       {gemiler.slice(0, compact ? 6 : 10).map((g, i) => <CircleMarker eventHandlers={{ click: () => setSelected(g) }} key={g.id} center={[g.lat, g.lng]} radius={7} className="ship-marker" pathOptions={{ color: '#fff', fillColor: i % 3 === 0 ? '#2A9D8F' : '#0A4D8C', fillOpacity: 1, weight: 2 }}><Tooltip>{g.ad} · {g.id}<br />{g.yuk}</Tooltip><Popup><strong>{g.ad}</strong><br />{g.status} · {g.suret} düyün</Popup></CircleMarker>)}
     </MapContainer>
     <div className="map-overlay"><span><i className="live-dot" /> AIS CANLI</span><small>Son yenilənmə: indi</small></div>
-    <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.ad || ''}>{selected && <div className="ship-detail"><div className="ship-visual"><div className="ship-3d"><span /></div></div><StatusBadge status={selected.status} /><dl><div><dt>IMO kodu</dt><dd>{selected.id}</dd></div><div><dt>Yük</dt><dd>{selected.yuk}</dd></div><div><dt>Mənşə</dt><dd>{selected.menshe}</dd></div><div><dt>Sürət</dt><dd>{selected.suret} düyün</dd></div><div><dt>Tonaj</dt><dd>{selected.tonaj.toLocaleString('az-AZ')} ton</dd></div><div><dt>Kanal</dt><dd>{selected.kanal}</dd></div></dl><div className="info-strip"><Navigation size={18} /> GPS mövqeyi AIS vasitəsilə avtomatik yenilənir</div></div>}</Modal>
+    <Modal open={!!selected} onClose={() => setSelected(null)} title={selected?.ad || ''}>{selected && <div className="ship-detail"><div className="ship-visual premium-ship-visual"><ShipScene3D compact name={selected.ad} course={`${Math.round(selected.suret * 6)}°`} /></div><StatusBadge status={selected.status} /><dl><div><dt>IMO kodu</dt><dd>{selected.id}</dd></div><div><dt>Yük</dt><dd>{selected.yuk}</dd></div><div><dt>Mənşə</dt><dd>{selected.menshe}</dd></div><div><dt>Sürət</dt><dd>{selected.suret} düyün</dd></div><div><dt>Tonaj</dt><dd>{selected.tonaj.toLocaleString('az-AZ')} ton</dd></div><div><dt>Kanal</dt><dd>{selected.kanal}</dd></div></dl><div className="info-strip"><Navigation size={18} /> GPS mövqeyi AIS vasitəsilə avtomatik yenilənir</div></div>}</Modal>
   </div>
 }

@@ -20,11 +20,13 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 - 13 rəqəmli avtomobil kodu və nömrə ilə manifest axtarışı
 - “Bill of” əlaqəsinin avtomatik yaradılmasının vizual nümayişi
 - Konfeti, toast bildirişləri, count-up və Framer Motion animasiyaları
+- SVG, CSS 3D perspective və radar qatları ilə cinematic gəmi vizualları
+- Dashboard, əməliyyat detalı, AIS xəritə modalı və gəmi modalında təkrar istifadə olunan `ShipScene3D`
+- `prefers-reduced-motion` dəstəyi ilə əlçatan motion sistemi
 - Bəyannamə cədvəli, HS kodları və ətraflı modal
 - Post qərarları tarixçəsi, CSV ixracı və çap/PDF görünüşü
 - Recharts ilə trafik, yük, liman payı və səmərəlilik analitikası
-- Hər səhifə üçün Azərbaycan dilində React Joyride turu
-- Tur vəziyyətinin `localStorage`-da saxlanması
+- React Joyride tur kodu sonrakı mərhələ üçün saxlanılıb, UI stabilləşdirilməsi dövründə müvəqqəti deaktivdir
 - İşıqlı və qaranlıq mövzu
 - Playwright avtomatik screenshot skripti
 - Vercel və Cloudflare Pages üçün SPA yönləndirmələri
@@ -49,7 +51,7 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 - Framer Motion, Lucide React, Zustand, Sonner
 - Leaflet və React Leaflet
 - Recharts, React CountUp, Canvas Confetti
-- React Joyride
+- React Joyride (müvəqqəti deaktiv)
 - Playwright
 
 ## Data arxitekturası
@@ -100,7 +102,7 @@ Nəticələr `screenshots/` qovluğunda saxlanılır.
 5. Demo üçün `15 AA 859` avtomobil nömrəsini axtarın.
 6. Sistem avtomobili liman manifestindən tapıb gəmiyə bağlayacaq.
 7. Aktiv GİB-i seçin və `Yoxla və təsdiq et` düyməsini basın.
-8. Səhifənin sağ üstündəki `?` düyməsi ilə interaktiv turu istənilən vaxt başladın.
+8. İnteraktiv səhifə turu hazırkı UI stabilləşdirmə versiyasında müvəqqəti deaktivdir.
 
 ## Hələ real sistemdə tələb olunan işlər
 
@@ -123,5 +125,5 @@ Nəticələr `screenshots/` qovluğunda saxlanılır.
 - Platformalar: Vercel və Cloudflare Pages uyğun
 - Build qovluğu: `dist`
 - Framework preset: Vite
-- Status: Lokal prototip hazırdır; yeni MSW/VAİS əməliyyat ekranı build və brauzer testindən keçib, istehsala yerləşdirilməyib
+- Status: Lokal prototip hazırdır; MSW/VAİS ekranları, cinematic 3D gəmi vizualları və responsive modallar build, Playwright və brauzer testindən keçib; istehsala yerləşdirilməyib
 - Son yenilənmə: 10 iyul 2026
