@@ -9,6 +9,10 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 ## Tamamlanmış funksiyalar
 
 - Azərbaycan dilində tam adaptiv idarəetmə paneli
+- VAİS və Maritime Single Window ekranlarından modelləşdirilmiş “Əməliyyat komandası”
+- Port çağırışları, ETA/ETD, risk balı və beş dövlət qurumu üzrə elektron icazə matrisi
+- Gömrük bəyannaməsi, yük manifesti, invoys və CMR üçün normallaşdırılmış sənəd modeli
+- Open-Meteo-dan Ələt üzrə canlı hava və açıq API-dən internet valyuta məzənnəsi
 - Yığılan glassmorphism yan menyu və mobil menyu
 - AIS əsaslı sintetik canlı gəmi xəritəsi: Ələt, Kurık, Aktau və Türkmənbaşı
 - Gəmi, avtomobil və GİB üzrə `Cmd/Ctrl + K` sürətli axtarış
@@ -30,6 +34,7 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 | Ünvan | Təyinat |
 |---|---|
 | `/` | Əməliyyat mərkəzi, statistika, canlı xəritə və fəaliyyət axını |
+| `/emeliyyatlar` | VAİS + MSW canlı növbə, qurum icazələri, risk və sənəd intellekti |
 | `/gemiler` | AIS radar, gəmi cədvəli, filter və gəmi detalları |
 | `/qeydiyyat` | Əsas vahid qeydiyyat demosu |
 | `/beyannameler` | Elektron GİB idarəetməsi və mal detalları |
@@ -49,15 +54,16 @@ Prototip 2026-cı ilə aid tam sintetik məlumatlardan istifadə edir. Heç bir 
 
 ## Data arxitekturası
 
-Bütün demo məlumatları `src/data/mockData.ts` faylındadır:
+Demo və əməliyyat məlumatları iki qatda təşkil olunub:
 
-- 12 sintetik gəmi
-- 36 sintetik avtomobil
-- 24 sintetik bəyannamə
-- 18 sintetik post qərarı
-- Liman koordinatları və aylıq analitika məlumatları
+- `src/data/mockData.ts`: 12 sintetik gəmi, 36 avtomobil, 24 bəyannamə, 18 post qərarı və analitika.
+- `src/data/operationalData.ts`: şəkillərdəki VAİS/MSW strukturlarından normallaşdırılmış port çağırışı, qurum icazəsi və gömrük sənədi modeli.
+- `src/services/liveData.ts`: Open-Meteo hava API-si və açıq valyuta API-si üçün timeout və xəta idarəetməli internet data qatı.
+- UN/LOCODE 2025-1 liman kodları məlumat modelinin istinad mənbəyidir.
 
-Bu versiyada backend və daimi yaddaş yoxdur. İstehsal mərhələsində AIS/MarineTraffic tipli gəmi məlumat mənbəyi, Liman Vahid Pəncərəsi və Dövlət Gömrük Komitəsinin strukturlaşdırılmış API-ləri server tərəfli inteqrasiya edilməlidir.
+Şəkillərdəki sənəd tipləri vahid sxemə gətirilib: `PortCall`, `AgencyClearance` və `CargoDocument`. Buraya gəmi/IMO/MMSI, səfər, ETA/ETD, ekipaj, sərnişin, yük, avtomobil, göndərən/alıcı, HS kodu, bağlama sayı, xalis/ümumi çəki, valyuta və sənəd statusu daxildir.
+
+Bu versiyada əməliyyat qeydləri demo modeldir və daimi yaddaş yoxdur. Real istehsal mərhələsində Dövlət SSO/RBAC, rəsmi VAİS/MSW API icazəsi və audit üçün Cloudflare D1 və ya təşkilatın mövcud verilənlər bazası tələb olunur. Kommersiya AIS məlumatı açıq API kimi təqdim edilmədiyinə görə real AIS mövqeləri üçün ayrıca provayder müqaviləsi lazımdır.
 
 ## Quraşdırma və işə salma
 
@@ -87,12 +93,14 @@ Nəticələr `screenshots/` qovluğunda saxlanılır.
 
 ## İstifadə qaydası
 
-1. Əsas paneldə ümumi əməliyyat vəziyyətini və gəmi xəritəsini izləyin.
-2. `Vahid qeydiyyat` səhifəsində gəmi seçin.
-3. Demo üçün `15 AA 859` avtomobil nömrəsini axtarın.
-4. Sistem avtomobili liman manifestindən tapıb gəmiyə bağlayacaq.
-5. Aktiv GİB-i seçin və `Yoxla və təsdiq et` düyməsini basın.
-6. Səhifənin sağ üstündəki `?` düyməsi ilə interaktiv turu istənilən vaxt başladın.
+1. `Əməliyyat komandası` səhifəsində port çağırışlarını, canlı Ələt havasını, məzənnəni və qurum təsdiqlərini izləyin.
+2. Cədvəldən gəmi seçərək marşrut, ekipaj, yük, risk və elektron icazə matrisini açın.
+3. Sənəd intellekti bölməsində manifest, invoys, CMR və gömrük bəyannaməsinin əlaqəsini yoxlayın.
+4. `Vahid qeydiyyat` səhifəsində gəmi seçin.
+5. Demo üçün `15 AA 859` avtomobil nömrəsini axtarın.
+6. Sistem avtomobili liman manifestindən tapıb gəmiyə bağlayacaq.
+7. Aktiv GİB-i seçin və `Yoxla və təsdiq et` düyməsini basın.
+8. Səhifənin sağ üstündəki `?` düyməsi ilə interaktiv turu istənilən vaxt başladın.
 
 ## Hələ real sistemdə tələb olunan işlər
 
@@ -115,5 +123,5 @@ Nəticələr `screenshots/` qovluğunda saxlanılır.
 - Platformalar: Vercel və Cloudflare Pages uyğun
 - Build qovluğu: `dist`
 - Framework preset: Vite
-- Status: Lokal prototip hazırdır, istehsala yerləşdirilməyib
+- Status: Lokal prototip hazırdır; yeni MSW/VAİS əməliyyat ekranı build və brauzer testindən keçib, istehsala yerləşdirilməyib
 - Son yenilənmə: 10 iyul 2026

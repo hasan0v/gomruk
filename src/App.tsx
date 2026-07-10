@@ -10,6 +10,7 @@ import Declarations from './pages/Declarations'
 import HistoryPage from './pages/HistoryPage'
 import Analytics from './pages/Analytics'
 import SettingsPage from './pages/SettingsPage'
+import Operations from './pages/Operations'
 
 const tours: Record<string, Step[]> = {
   '/': [
@@ -19,6 +20,12 @@ const tours: Record<string, Step[]> = {
     { target: '.activity-feed', content: 'Sistemdə baş verən bütün əməliyyatlar real-vaxt jurnalına əlavə olunur.' },
     { target: '.process-banner', content: 'Platformanın əsas ideyası budur: üç ayrı qeydiyyat prosesi bir vahid ekrana çevrilir.' },
     { target: '.global-search', content: '⌘K və ya Ctrl+K ilə gəmi, avtomobil və GİB kodunu dərhal tapın.' },
+  ],
+  '/emeliyyatlar': [
+    { target: '.ops-live-strip', content: 'Canlı hava, məzənnə, port çağırışları və təsdiq göstəriciləri internet mənbələrindən və əməliyyat modelindən birləşdirilir.' },
+    { target: '.ops-queue', content: 'VAİS və Maritime Single Window sorğuları gəmi, ETA/ETD, status, icazə və risk göstəriciləri ilə vahid növbədədir.' },
+    { target: '.ops-detail', content: 'Seçilmiş gəminin marşrutu, ekipajı, yükü və beş qurum üzrə elektron icazələri burada izlənir.' },
+    { target: '.document-intelligence', content: 'Manifest, invoys, CMR və gömrük bəyannaməsi normallaşdırılmış sənəd modelində əlaqələndirilir.' },
   ],
   '/gemiler': [
     { target: '.radar-panel', content: 'AIS radar paneli gəmi mövqelərini sintetik real-vaxt məlumatı ilə göstərir.' },
@@ -60,5 +67,5 @@ const tours: Record<string, Step[]> = {
 export default function App() {
   const location = useLocation(); const key = location.pathname; const steps = useMemo(() => tours[key] || tours['/'], [key]); const [run, setRun] = useState(false)
   useEffect(() => { setRun(false); const timer = setTimeout(() => { if (!localStorage.getItem(`vglp-tour-${key}`)) setRun(true) }, 650); return () => clearTimeout(timer) }, [key])
-  return <Layout onTour={() => setRun(true)}><PageTour run={run} setRun={setRun} steps={steps} storageKey={key}/><Routes><Route path="/" element={<Dashboard/>}/><Route path="/gemiler" element={<Ships/>}/><Route path="/qeydiyyat" element={<Registration/>}/><Route path="/beyannameler" element={<Declarations/>}/><Route path="/tarixce" element={<HistoryPage/>}/><Route path="/analitika" element={<Analytics/>}/><Route path="/parametrler" element={<SettingsPage/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Layout>
+  return <Layout onTour={() => setRun(true)}><PageTour run={run} setRun={setRun} steps={steps} storageKey={key}/><Routes><Route path="/" element={<Dashboard/>}/><Route path="/emeliyyatlar" element={<Operations/>}/><Route path="/gemiler" element={<Ships/>}/><Route path="/qeydiyyat" element={<Registration/>}/><Route path="/beyannameler" element={<Declarations/>}/><Route path="/tarixce" element={<HistoryPage/>}/><Route path="/analitika" element={<Analytics/>}/><Route path="/parametrler" element={<SettingsPage/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Layout>
 }

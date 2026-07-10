@@ -3,7 +3,7 @@ import { mkdir } from 'node:fs/promises'
 
 const baseURL = process.env.BASE_URL || 'http://localhost:3000'
 const pages = [
-  ['dashboard', '/'], ['gemiler', '/gemiler'], ['qeydiyyat', '/qeydiyyat'],
+  ['dashboard', '/'], ['emeliyyatlar', '/emeliyyatlar'], ['gemiler', '/gemiler'], ['qeydiyyat', '/qeydiyyat'],
   ['beyannameler', '/beyannameler'], ['tarixce', '/tarixce'], ['analitika', '/analitika'],
 ]
 await mkdir('screenshots', { recursive: true })

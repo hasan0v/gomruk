@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Anchor, BarChart3, Bell, ChevronLeft, ClipboardCheck, FileText, HelpCircle, History, LayoutDashboard, Menu, Moon, Search, Settings, Ship, Sun, X } from 'lucide-react'
+import { Activity, Anchor, BarChart3, Bell, ChevronLeft, ClipboardCheck, FileText, HelpCircle, History, LayoutDashboard, Menu, Moon, Search, Settings, Ship, Sun, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useAppStore } from '../store/useAppStore'
 import { avtomobiller, beyannameler, gemiler } from '../data/mockData'
 
 const links = [
-  ['/', 'İdarə paneli', LayoutDashboard], ['/gemiler', 'Gəmi idarəetməsi', Ship], ['/qeydiyyat', 'Vahid qeydiyyat', ClipboardCheck],
+  ['/', 'İdarə paneli', LayoutDashboard], ['/emeliyyatlar', 'Əməliyyat komandası', Activity], ['/gemiler', 'Gəmi idarəetməsi', Ship], ['/qeydiyyat', 'Vahid qeydiyyat', ClipboardCheck],
   ['/beyannameler', 'Bəyannamələr', FileText], ['/tarixce', 'Tarixçə və qərarlar', History], ['/analitika', 'Analitika', BarChart3], ['/parametrler', 'Parametrlər', Settings],
 ] as const
 
@@ -19,7 +19,7 @@ export default function Layout({ children, onTour }: { children: ReactNode; onTo
   return <div className={`app-shell ${collapsed ? 'sidebar-collapsed' : ''}`}>
     <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
       <header className="brand"><span className="brand-mark"><Anchor /></span>{!collapsed && <div><strong>VGLP</strong><small>Vahid rəqəmsal liman</small></div>}<button className="mobile-close" onClick={() => setSidebarOpen(false)}><X /></button></header>
-      <nav aria-label="Əsas naviqasiya">{links.map(([to, label, Icon]) => <NavLink key={to} end={to === '/'} to={to} onClick={() => setSidebarOpen(false)}><Icon size={20} /><span>{label}</span>{to === '/qeydiyyat' && <b>ƏSAS</b>}</NavLink>)}</nav>
+      <nav aria-label="Əsas naviqasiya">{links.map(([to, label, Icon]) => <NavLink key={to} end={to === '/'} to={to} onClick={() => setSidebarOpen(false)}><Icon size={20} /><span>{label}</span>{to === '/emeliyyatlar' && <b>CANLI</b>}</NavLink>)}</nav>
       {!collapsed && <section className="integration-card"><span><i /> SİSTEMLƏR AKTİVDİR</span><strong>Liman ↔ Gömrük</strong><small>AIS və Vahid Pəncərə əlaqəsi</small><div><em>99.8%</em><small>inteqrasiya</small></div></section>}
       <button className="collapse-btn" onClick={() => setCollapsed(v => !v)} aria-label="Yan paneli yığ"><ChevronLeft className={collapsed ? 'rotate' : ''} /></button>
     </aside>
@@ -36,7 +36,7 @@ export default function Layout({ children, onTour }: { children: ReactNode; onTo
 function CommandPalette({ onClose, onSelect }: { onClose: () => void; onSelect: (p: string) => void }) {
   const [q, setQ] = useState('')
   const results = useMemo(() => {
-    if (!q) return [{ title: 'Vahid qeydiyyata keç', sub: 'Əsas əməliyyat ekranı', path: '/qeydiyyat', icon: '→' }, { title: 'Canlı gəmi xəritəsi', sub: 'AIS radar paneli', path: '/gemiler', icon: '→' }]
+    if (!q) return [{ title: 'Əməliyyat komandasını aç', sub: 'MSW + VAİS vahid canlı görünüş', path: '/emeliyyatlar', icon: '→' }, { title: 'Vahid qeydiyyata keç', sub: 'Gəmi → avtomobil → bəyannamə', path: '/qeydiyyat', icon: '→' }, { title: 'Canlı gəmi xəritəsi', sub: 'AIS radar paneli', path: '/gemiler', icon: '→' }]
     const s = q.toLocaleLowerCase('az')
     return [
       ...gemiler.filter(x => `${x.ad} ${x.id}`.toLocaleLowerCase('az').includes(s)).slice(0, 4).map(x => ({ title: x.ad, sub: `${x.id} · ${x.status}`, path: '/gemiler', icon: 'G' })),
