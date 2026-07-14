@@ -62,15 +62,15 @@ export const portCalls: PortCall[] = [
 ]
 
 export const cargoDocuments: CargoDocument[] = [
-  { id: 'DOC-260710-01', type: 'Gömrük bəyannaməsi', reference: '3-33-3900/2-001059', consignor: 'Anker Innovations Limited', consignee: 'Regional Distribution MMC', origin: 'Çin', destination: 'Azərbaycan', hsCode: '8507.60', packages: 376, grossKg: 52454.34, netKg: 30855.91, currency: 'AZN', value: 270021.28, state: 'Doğrulanıb' },
+  { id: 'DOC-260710-01', type: 'Gömrük bəyannaməsi', reference: '01263001286453', consignor: 'Anker Innovations Limited', consignee: 'Regional Distribution MMC', origin: 'Çin', destination: 'Azərbaycan', hsCode: '8507.60.00.09', packages: 376, grossKg: 21573, netKg: 19198.56, currency: 'AZN', value: 524543.34, state: 'Doğrulanıb' },
   { id: 'DOC-260710-02', type: 'Yük manifesti', reference: '245263–245346', consignor: '40 göndərici', consignee: 'Mərkəzi Asiya alıcıları', origin: 'Ələt', destination: 'Kurık', hsCode: 'MULTI', packages: 1187, grossKg: 1187378, netKg: 984320, currency: 'USD', value: 1854000, state: 'OCR yoxlaması' },
   { id: 'DOC-260710-03', type: 'İnvoys', reference: '139/1', consignor: 'EURO Plywood LLP', consignee: 'IBG LTD', origin: 'Qazaxıstan', destination: 'Ukrayna', hsCode: '4412.33', packages: 33, grossKg: 19833, netKg: 18777, currency: 'EUR', value: 16462.05, state: 'Doğrulanıb' },
   { id: 'DOC-260710-04', type: 'CMR', reference: 'DA 1401307', consignor: 'Annageldiyev Charyyar', consignee: 'OBA MARKET MMC', origin: 'Türkmənistan', destination: 'Azərbaycan', hsCode: '2202.10', packages: 4448, grossKg: 21689.6, netKg: 21209.5, currency: 'USD', value: 9373.44, state: 'Risk analizi' },
 ]
 
 export const dataSources = [
-  { name: 'Open-Meteo', description: 'Ələt üzrə hava və külək', kind: 'Canlı API' },
-  { name: 'ExchangeRate API', description: 'USD əsaslı valyuta məzənnələri', kind: 'Canlı API' },
+  { name: 'Open-Meteo', description: 'Ələt üzrə hava və külək', kind: 'API' },
+  { name: 'ExchangeRate API', description: 'USD əsaslı valyuta məzənnələri', kind: 'API' },
   { name: 'UN/LOCODE 2025-1', description: 'Liman və məkan kodları', kind: 'Açıq data' },
   { name: 'VAİS / MSW sxemi', description: 'Şəkillərdən normallaşdırılmış əməliyyat modeli', kind: 'Demo model' },
 ]

@@ -7,16 +7,16 @@ import Declarations from './pages/Declarations'
 import HistoryPage from './pages/HistoryPage'
 import Analytics from './pages/Analytics'
 import SettingsPage from './pages/SettingsPage'
-import Operations from './pages/Operations'
 
 // React Joyride is intentionally disabled for the current UI stabilization phase.
 // PageTour and tour definitions remain in the project history for later reactivation.
 export default function App() {
   return <Layout><Routes>
     <Route path="/" element={<Dashboard/>}/>
-    <Route path="/emeliyyatlar" element={<Operations/>}/>
+    <Route path="/emeliyyatlar" element={<Navigate to="/gemiler" replace/>}/>
     <Route path="/gemiler" element={<Ships/>}/>
     <Route path="/qeydiyyat" element={<Registration/>}/>
+    {/* <Route path="/beyannameler" element={<Declarations/>}/> */}
     <Route path="/beyannameler" element={<Declarations/>}/>
     <Route path="/tarixce" element={<HistoryPage/>}/>
     <Route path="/analitika" element={<Analytics/>}/>

@@ -51,7 +51,7 @@ export default function ShipScene3D({ compact = false, name = 'SHAHDAG RORO', co
       <path d="M600 211 648 229 618 238" fill="#e8f5fb" opacity=".9"/>
       <text x="466" y="250" fill="#b8eaf2" fontSize="13" fontFamily="Inter" fontWeight="700" letterSpacing="2">{name.slice(0, 18)}</text>
     </motion.svg>
-    <div className="ship-hud ship-hud-left"><small>IMO TRACK</small><strong>ACTIVE</strong><span><i/> AIS SYNC</span></div>
+    <div className="ship-hud ship-hud-left"><small>GƏMİ</small><strong>{name.slice(0, 12)}</strong><span>AIS MƏLUMATI</span></div>
     <div className="ship-hud ship-hud-right"><small>KURS</small><strong>{course}</strong><span>12.4 KNOT</span></div>
     <div className="ship-depth"><span>0m</span><i/><i/><i/><span>12m</span></div>
   </motion.figure>

@@ -1,7 +1,113 @@
-import { useMemo, useState } from 'react'
-import { Download, Eye, FileCheck2, Filter, Search } from 'lucide-react'
+import { useMemo, useState, useEffect } from 'react'
+import { Download, Eye, FileCheck2, Filter, Search, CircleCheck, FileText, PackageCheck, Printer, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { beyannameler } from '../data/mockData'
-import { Button, Card, Modal, PageHeader, StatusBadge } from '../components/UI'
+import { useSearchParams } from 'react-router-dom'
+import type { Declaration } from '../data/mockData'
+import { useAppStore } from '../store/useAppStore'
+import { Button, Card, PageHeader, StatusBadge } from '../components/UI'
+import { DeclarationDocumentView } from '../components/DeclarationDocumentView'
 
-export default function Declarations(){const [q,setQ]=useState('');const [status,setStatus]=useState('Hamısı');const [selected,setSelected]=useState<(typeof beyannameler)[number]|null>(null);const rows=useMemo(()=>beyannameler.filter(b=>(status==='Hamısı'||b.status===status)&&`${b.kod} ${b.broker} ${b.avtomobil}`.toLowerCase().includes(q.toLowerCase())),[q,status]);return <><PageHeader eyebrow="ELEKTRON GÖMRÜK SİSTEMİ" title="Bəyannamələr" description="Brokerlərdən daxil olan GİB-lərin vahid idarəetmə paneli" action={<Button onClick={()=>toast.success('Hesabat ixrac edildi')}><Download/> Hesabatı ixrac et</Button>}/><section className="mini-stats"><Card><small>Cəmi bəyannamə</small><strong>89</strong><span>+12 bu gün</span></Card><Card><small>Təsdiqlənib</small><strong>72</strong><span className="green-text">80.9%</span></Card><Card><small>Yoxlamada</small><strong>13</strong><span className="amber-text">14.6%</span></Card><Card><small>Risk nəzarəti</small><strong>4</strong><span className="red-text">4.5%</span></Card></section><Card className="data-card declarations-table" hover={false}><header><div><h2>Elektron bəyannamələr</h2><p>Gömrük Vahid Pəncərəsindən avtomatik sinxronlaşdırılır</p></div><div className="table-tools"><label><Search/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="GİB kodu, broker, avtomobil..."/></label><select value={status} onChange={e=>setStatus(e.target.value)}><option>Hamısı</option><option>Təsdiqlənib</option><option>Yoxlamada</option><option>Risk nəzarəti</option></select><button><Filter/></button></div></header><div className="table-scroll"><table><thead><tr><th>GİB kodu</th><th>Tarix</th><th>Broker</th><th>Avtomobil</th><th>Mal / Dəyər</th><th>Status</th><th></th></tr></thead><tbody>{rows.map(b=><tr key={b.kod}><td><strong>{b.kod}</strong></td><td>{b.tarix}</td><td>{b.broker}</td><td><span className="plate">{b.avtomobil}</span></td><td><strong>{b.mallar[0].ad}</strong><small>{b.umumiDeyer.toLocaleString()} {b.valyuta}</small></td><td><StatusBadge status={b.status}/></td><td><button className="row-action" onClick={()=>setSelected(b)}><Eye/></button></td></tr>)}</tbody></table></div></Card><Modal open={!!selected} onClose={()=>setSelected(null)} title="Bəyannamə detalları">{selected&&<div className="declaration-detail"><div className="detail-hero"><FileCheck2/><div><small>GİB KODU</small><strong>{selected.kod}</strong></div><StatusBadge status={selected.status}/></div><dl><div><dt>Broker</dt><dd>{selected.broker}</dd></div><div><dt>Avtomobil</dt><dd>{selected.avtomobil}</dd></div><div><dt>Alıcı</dt><dd>{selected.alici}</dd></div><div><dt>Satıcı</dt><dd>{selected.satici}</dd></div></dl><h3>Mallar</h3><table><thead><tr><th>HS kodu</th><th>Mal</th><th>Miqdar</th><th>Dəyər</th></tr></thead><tbody>{selected.mallar.map(m=><tr><td>{m.hsKod}</td><td>{m.ad}</td><td>{m.miqdar} {m.olcuVahidi}</td><td>{m.deyer.toLocaleString()} USD</td></tr>)}</tbody></table></div>}</Modal></>}
+const money = (value: number, currency: string) => new Intl.NumberFormat('az-AZ', { maximumFractionDigits: 2 }).format(value) + ` ${currency}`
+
+export default function Declarations() {
+  const { declarations } = useAppStore()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [q, setQ] = useState('')
+  const [status, setStatus] = useState('Hamısı')
+  const [selected, setSelected] = useState<Declaration | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
+  const urlKod = searchParams.get('kod')
+
+  useEffect(() => {
+    if (urlKod) setSelected(declarations.find(b => b.kod === urlKod) ?? null)
+  }, [urlKod, declarations])
+
+  const rows = useMemo(() => declarations.filter(b =>
+    (status === 'Hamısı' || b.status === status) &&
+    `${b.kod} ${b.broker} ${b.avtomobil} ${b.alici}`.toLocaleLowerCase('az').includes(q.toLocaleLowerCase('az'))
+  ), [q, status, declarations])
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const pagedRows = useMemo(
+    () => rows.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [rows, currentPage],
+  )
+
+  useEffect(() => { setPage(1) }, [q, status])
+
+  const exportCsv = () => {
+    const header = 'GİB kodu,Tarix,Broker,Alıcı,Mal,Dəyər,Status\n'
+    const content = rows.map(b => [b.kod, b.tarix, b.broker, b.alici, b.mallar[0].ad, money(b.umumiDeyer, b.valyuta), b.status].map(v => `"${v}"`).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([header + content], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a'); link.href = url; link.download = 'elektron-beyannameler.csv'; link.click(); URL.revokeObjectURL(url)
+    toast.success('Hesabat ixrac edildi')
+  }
+
+  const closeDetail = () => { setSelected(null); if (urlKod) setSearchParams({}) }
+  const approved = declarations.filter(x => x.status === 'Təsdiqlənib').length
+
+  return <>
+    <PageHeader eyebrow="ELEKTRON GÖMRÜK SİSTEMİ" title="Bəyannamələr" description="Rəqəmsal bəyannamələrin yoxlanması, izlənməsi və arxivləşdirilməsi" action={<Button onClick={exportCsv}><Download/> Hesabatı ixrac et</Button>} />
+
+    <section className="mini-stats material-kpis">
+      <Card><FileText/><small>Cəmi bəyannamə</small><strong>{declarations.length}</strong><span>Qəbul edilmiş sənədlər</span></Card>
+      <Card><CircleCheck/><small>Təsdiqlənib</small><strong>{approved}</strong><span className="green-text">Emala hazır</span></Card>
+      <Card><PackageCheck/><small>Yoxlamada</small><strong>{declarations.filter(x => x.status === 'Yoxlamada').length}</strong><span className="amber-text">Operator nəzarəti</span></Card>
+      <Card><Filter/><small>Risk nəzarəti</small><strong>{declarations.filter(x => x.status === 'Risk nəzarəti').length}</strong><span className="red-text">Əlavə yoxlama</span></Card>
+    </section>
+
+    <Card className="data-card declarations-table material-table" hover={false}>
+      <header>
+        <div><h2>Elektron bəyannamələr</h2><p>Gömrük Vahid Pəncərəsindən sinxronlaşdırılan sənədlər</p></div>
+        <div className="table-tools">
+          <label><Search/><input value={q} onChange={e => setQ(e.target.value)} placeholder="Kod, broker və ya alıcı..."/></label>
+          <select value={status} onChange={e => setStatus(e.target.value)} aria-label="Status üzrə filtr"><option>Hamısı</option><option>Təsdiqlənib</option><option>Yoxlamada</option><option>Risk nəzarəti</option><option>Arxivləşdirilib</option></select>
+          <button onClick={() => { setQ(''); setStatus('Hamısı') }} aria-label="Filtrləri sıfırla"><Filter/></button>
+        </div>
+      </header>
+      <div className="table-scroll"><table>
+        <thead><tr><th>GİB kodu</th><th>Tarix</th><th>İştirakçılar</th><th>Mal</th><th>Gömrük dəyəri</th><th>Status</th><th><span className="sr-only">Detallar</span></th></tr></thead>
+        <tbody>{pagedRows.map(b => <tr key={b.kod} className={b.source ? 'featured-row' : ''}>
+          <td><strong>{b.kod}</strong>{b.source && <small className="reference-tag">İstinad sənədi</small>}</td>
+          <td>{b.tarix}</td>
+          <td><strong>{b.alici}</strong><small>{b.broker}</small></td>
+          <td><strong>{b.mallar[0].ad}</strong><small>HS {b.mallar[0].hsKod}</small></td>
+          <td><strong>{money(b.umumiDeyer, b.valyuta)}</strong><small>{b.mallar[0].miqdar} {b.mallar[0].olcuVahidi}</small></td>
+          <td><StatusBadge status={b.status}/></td>
+          <td><button className="row-action" onClick={() => setSelected(b)} aria-label={`${b.kod} detallarını aç`}><Eye/></button></td>
+        </tr>)}
+        {rows.length === 0 && <tr><td colSpan={7} className="empty-table-cell">Filtrə uyğun bəyannamə tapılmadı</td></tr>}
+        </tbody>
+      </table></div>
+      {rows.length > pageSize && (
+        <footer className="table-pagination" aria-label="Səhifələmə">
+          <span>{(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, rows.length)} / {rows.length} bəyannamə</span>
+          <div>
+            <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>Əvvəlki</button>
+            <strong>{currentPage} / {pageCount}</strong>
+            <button type="button" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={currentPage === pageCount}>Növbəti</button>
+          </div>
+        </footer>
+      )}
+    </Card>
+
+    {selected && <DeclarationSheet declaration={selected} onClose={closeDetail}/>} 
+  </>
+}
+
+function DeclarationSheet({ declaration: d, onClose }: { declaration: Declaration; onClose: () => void }) {
+  return <div className="declaration-backdrop" role="dialog" aria-modal="true" aria-label="Bəyannamə detalları" onMouseDown={onClose}>
+    <article className="declaration-sheet declaration-sheet-full" onMouseDown={e => e.stopPropagation()}>
+      <header className="sheet-toolbar">
+        <div><FileCheck2/><span><small>{d.senedNovu?.toUpperCase() ?? 'GÖMRÜK BƏYANNAMƏSİ'}</small><strong>{d.kod}</strong></span></div>
+        <div><Button variant="ghost" onClick={() => window.print()}><Printer/> Çap et</Button><button onClick={onClose} aria-label="Bağla"><X/></button></div>
+      </header>
+      <div className="declaration-sheet-body">
+        <DeclarationDocumentView declaration={d} />
+      </div>
+      <footer className="sheet-footer"><span><CircleCheck/> Elektron sənəd doğrulanıb</span><span>Son yenilənmə: {d.qeydiyyatTarixi ?? d.tarix}</span></footer>
+    </article>
+  </div>
+}

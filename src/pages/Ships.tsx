@@ -1,17 +1,520 @@
-import { useMemo, useState } from 'react'
-import { Filter, Plus, Search, Ship as ShipIcon, Waves } from 'lucide-react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  Activity, Anchor, BadgeCheck, Boxes, ChevronRight, CircleDollarSign, CloudSun,
+  Download, FileScan, Filter, Plus, RefreshCw, Search, ShieldAlert, Ship as ShipIcon,
+  Users, Waves, Wind, X,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { gemiler } from '../data/mockData'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAppStore } from '../store/useAppStore'
 import SeaMap from '../components/SeaMap'
-import { Button, Card, Modal, PageHeader, StatusBadge } from '../components/UI'
 import ShipScene3D from '../components/ShipScene3D'
+import { Button, Card, Modal, PageHeader, StatusBadge } from '../components/UI'
+import { agencies, cargoDocuments, dataSources, portCalls, type PortCall } from '../data/operationalData'
+import { fetchAlatWeather, fetchExchangeRates, type LiveRates, type LiveWeather } from '../services/liveData'
+
+const clearanceTone = { approved: 'approved', pending: 'pending', review: 'review' } as const
 
 export default function Ships() {
-  const [q, setQ] = useState(''); const [status, setStatus] = useState('Hamısı'); const [selected, setSelected] = useState<(typeof gemiler)[number] | null>(null)
-  const rows = useMemo(() => gemiler.filter(g => (status === 'Hamısı' || g.status === status) && `${g.ad} ${g.id} ${g.yuk}`.toLocaleLowerCase('az').includes(q.toLocaleLowerCase('az'))), [q,status])
-  return <><PageHeader eyebrow="AIS NƏZARƏT MƏRKƏZİ" title="Gəmi idarəetməsi" description="Xəzər dənizində gəmilərin avtomatik tanınması və liman əməliyyatları" action={<div className="header-actions"><span className="auto-badge"><i/> AVTOMATİK QEYDİYYAT AKTİVDİR</span><Button onClick={() => toast.info('Avtomatik rejim aktivdir — gəmi AIS vasitəsilə özü qeydə alınır')}><Plus/> Yeni gəmi</Button></div>} />
-    <section className="ship-kpis"><Card><span><ShipIcon/></span><div><small>Aktiv gəmilər</small><strong>12</strong></div></Card><Card><span className="green"><Waves/></span><div><small>Yanaşan</small><strong>4</strong></div></Card><Card><span className="amber"><Waves/></span><div><small>Yaxınlaşan</small><strong>5</strong></div></Card><Card><span className="blue"><Waves/></span><div><small>Orta gözləmə</small><strong title="1 saat 24 dəqiqə">1 saat 24 dəq</strong></div></Card></section>
-    <section className="ships-layout"><Card className="radar-panel" hover={false}><header className="card-heading"><div><span className="title-icon"><Waves/></span><div><h2>AIS radar paneli</h2><p>Avtomatik mövqe yenilənməsi · 10 san</p></div></div><span className="live-label"><i/> CANLI</span></header><SeaMap /></Card>
-    <Card className="ship-table-card" hover={false}><header><div><h2>Gəmilər</h2><p>{rows.length} gəmi göstərilir</p></div><div className="table-tools"><label><Search/><input placeholder="Gəmi axtar..." value={q} onChange={e=>setQ(e.target.value)}/></label><select value={status} onChange={e=>setStatus(e.target.value)}><option>Hamısı</option><option>Yanaşıb</option><option>Yaxınlaşır</option><option>Manevrdə</option><option>Yola çıxıb</option></select><button aria-label="Filtr"><Filter/></button></div></header><div className="table-scroll"><table><thead><tr><th>Gəmi / IMO</th><th>Yük</th><th>Status</th><th>Kanal</th><th>Sürət</th></tr></thead><tbody>{rows.map(g=><tr key={g.id} onClick={()=>setSelected(g)}><td><div className="ship-name"><span><ShipIcon/></span><div><strong>{g.ad}</strong><small>{g.id} · {g.bayraq}</small></div></div></td><td><strong>{g.yuk}</strong><small>{g.tonaj.toLocaleString('az-AZ')} ton</small></td><td><StatusBadge status={g.status}/></td><td>{g.kanal}</td><td>{g.suret} düyün</td></tr>)}</tbody></table></div></Card></section>
-    <Modal open={!!selected} onClose={()=>setSelected(null)} title={selected?.ad||''}>{selected&&<div className="modal-detail"><div className="ship-visual premium-ship-visual"><ShipScene3D compact name={selected.ad} course={`${Math.round(selected.suret * 6)}°`}/></div><StatusBadge status={selected.status}/><dl><div><dt>IMO</dt><dd>{selected.id}</dd></div><div><dt>Mənşə</dt><dd>{selected.menshe}</dd></div><div><dt>Yük</dt><dd>{selected.yuk}</dd></div><div><dt>Tonaj</dt><dd>{selected.tonaj.toLocaleString()} ton</dd></div></dl><Button onClick={()=>toast.success('Gəmi əməliyyat səhifəsinə əlavə edildi')}>Əməliyyata başla</Button></div>}</Modal></>
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { ships, addShip } = useAppStore()
+
+  const [q, setQ] = useState('')
+  const [status, setStatus] = useState('Hamısı')
+  const [selectedShip, setSelectedShip] = useState<(typeof ships)[number] | null>(null)
+  const [selectedCall, setSelectedCall] = useState<PortCall | null>(portCalls[0])
+  const [opsQuery, setOpsQuery] = useState('')
+  const [weather, setWeather] = useState<LiveWeather | null>(null)
+  const [rates, setRates] = useState<LiveRates | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [newShipModalOpen, setNewShipModalOpen] = useState(false)
+  const [newShipName, setNewShipName] = useState('')
+  const [newShipImo, setNewShipImo] = useState('')
+  const [newShipType, setNewShipType] = useState('Ro-Ro gəmisi')
+  const [newShipFlag, setNewShipFlag] = useState('Azərbaycan')
+  const [newShipCargo, setNewShipCargo] = useState('Avtomobillər')
+  const [newShipTonnage, setNewShipTonnage] = useState('9500')
+  const [newShipStatus, setNewShipStatus] = useState<'Lövbərdə' | 'Yolda' | 'Körpüdə'>('Lövbərdə')
+  const [newShipChannel, setNewShipChannel] = useState('Kanal 1')
+  const [newShipSpeed, setNewShipSpeed] = useState('11.5')
+
+  const urlShipId = searchParams.get('id')
+  useEffect(() => {
+    if (urlShipId) {
+      const match = ships.find(g => g.id === urlShipId)
+      if (match) setSelectedShip(match)
+    }
+  }, [urlShipId, ships])
+
+  const loadLiveData = async () => {
+    setLoading(true)
+    const [weatherResult, rateResult] = await Promise.allSettled([fetchAlatWeather(), fetchExchangeRates()])
+    if (weatherResult.status === 'fulfilled') setWeather(weatherResult.value)
+    if (rateResult.status === 'fulfilled') setRates(rateResult.value)
+    if (weatherResult.status === 'rejected' || rateResult.status === 'rejected') {
+      toast.warning('Mənbələrdən biri əlçatan deyil — son məlumat göstərilir')
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => { void loadLiveData() }, [])
+
+  const rows = useMemo(
+    () => ships.filter(g =>
+      (status === 'Hamısı' || g.status === status) &&
+      `${g.ad} ${g.id} ${g.yuk}`.toLocaleLowerCase('az').includes(q.toLocaleLowerCase('az')),
+    ),
+    [q, status, ships],
+  )
+
+  const opsRows = useMemo(
+    () => portCalls.filter(call =>
+      `${call.id} ${call.vessel} ${call.callSign} ${call.imo} ${call.registrationNo}`
+        .toLocaleLowerCase('az')
+        .includes(opsQuery.toLocaleLowerCase('az')),
+    ),
+    [opsQuery],
+  )
+
+  const totalCargo = portCalls.reduce((sum, item) => sum + item.cargoTons, 0)
+  const approvals = portCalls.flatMap(item => Object.values(item.clearances)).filter(item => item === 'approved').length
+  const approvalRate = Math.round(approvals / (portCalls.length * 5) * 100)
+
+  const handleCreateShip = (e: FormEvent) => {
+    e.preventDefault()
+    if (!newShipImo.startsWith('IMO')) {
+      toast.error('IMO kodu "IMO" ilə başlamalıdır (məs: IMO9345678)')
+      return
+    }
+    addShip({
+      id: newShipImo,
+      ad: newShipName,
+      novu: newShipType,
+      bayraq: newShipFlag,
+      yuk: newShipCargo,
+      tonaj: Number(newShipTonnage) || 0,
+      status: newShipStatus,
+      kanal: newShipChannel,
+      girisTarixi: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      cixisTarixi: '',
+      menshe: 'Kurık, Qazaxıstan',
+      lat: 40.0 + (Math.random() - 0.5) * 1.5,
+      lng: 50.0 + (Math.random() - 0.5) * 1.5,
+      suret: Number(newShipSpeed) || 0,
+    })
+    toast.success(`${newShipName} gəmisi uğurla əlavə edildi!`)
+    setNewShipModalOpen(false)
+    setNewShipName('')
+    setNewShipImo('')
+  }
+
+  const exportCsv = () => {
+    const header = 'Tip,ID,Gəmi,Status,Detal,Tonaj/Risk\n'
+    const shipLines = ships.map(g =>
+      ['AIS', g.id, g.ad, g.status, g.kanal, g.tonaj].map(v => `"${v}"`).join(','),
+    )
+    const callLines = portCalls.map(c =>
+      ['PortCall', c.id, c.vessel, c.status, c.imo, c.riskScore].map(v => `"${v}"`).join(','),
+    )
+    const blob = new Blob([header + [...shipLines, ...callLines].join('\n')], { type: 'text/csv;charset=utf-8' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = 'gemi-emeliyyatlari.csv'
+    link.click()
+    toast.success('Birləşdirilmiş hesabat yükləndi')
+  }
+
+  return <>
+    <PageHeader
+      eyebrow="AIS + MARITIME SINGLE WINDOW · VAİS"
+      title="Gəmi əməliyyat mərkəzi"
+      description="AIS radar, liman çağırışları, icazələr və gəmi idarəetməsi vahid ekranda"
+      action={
+        <div className="header-actions">
+          <button type="button" className="source-sync" onClick={() => void loadLiveData()}>
+            <RefreshCw className={loading ? 'spin' : ''} />
+            <span>{loading ? 'Sinxronlaşdırılır' : 'Məlumatları yenilə'}</span>
+          </button>
+          <Button variant="ghost" onClick={exportCsv}><Download /> Excel / CSV</Button>
+          <Button onClick={() => setNewShipModalOpen(true)}><Plus /> Yeni gəmi</Button>
+        </div>
+      }
+    />
+
+    <section className="ops-live-strip">
+      <article>
+        <span className="ops-live-icon"><CloudSun /></span>
+        <div>
+          <small>Ələt havası</small>
+          <strong>{weather ? `${weather.temperature}°C` : '—'}</strong>
+          <em><Wind /> {weather ? `${weather.windSpeed} km/saat` : '—'}</em>
+        </div>
+      </article>
+      <article>
+        <span className="ops-live-icon mint"><CircleDollarSign /></span>
+        <div>
+          <small>USD / AZN</small>
+          <strong>{rates ? rates.usdToAzn.toFixed(4) : '—'}</strong>
+          <em>İnternet məzənnəsi</em>
+        </div>
+      </article>
+      <article>
+        <span className="ops-live-icon amber"><ShipIcon /></span>
+        <div>
+          <small>AIS gəmilər</small>
+          <strong>{ships.length}</strong>
+          <em>{ships.filter(s => s.status === 'Körpüdə').length} körpüdə</em>
+        </div>
+      </article>
+      <article>
+        <span className="ops-live-icon violet"><Boxes /></span>
+        <div>
+          <small>Port çağırış / yük</small>
+          <strong>{portCalls.length}</strong>
+          <em>{totalCargo.toLocaleString('az-AZ', { maximumFractionDigits: 0 })} t</em>
+        </div>
+      </article>
+      <article>
+        <span className="ops-live-icon green"><BadgeCheck /></span>
+        <div>
+          <small>Qurum təsdiqləri</small>
+          <strong>{approvalRate}%</strong>
+          <em>5 qurum üzrə</em>
+        </div>
+      </article>
+    </section>
+
+    <section className="ship-kpis">
+      <Card><span><ShipIcon /></span><div><small>Qeydiyyatdakı gəmilər</small><strong>{ships.length}</strong></div></Card>
+      <Card><span className="green"><Waves /></span><div><small>Körpüdə</small><strong>{ships.filter(s => s.status === 'Körpüdə').length}</strong></div></Card>
+      <Card><span className="amber"><Waves /></span><div><small>Lövbərdə</small><strong>{ships.filter(s => s.status === 'Lövbərdə').length}</strong></div></Card>
+      <Card><span className="blue"><Activity /></span><div><small>Yolda</small><strong>{ships.filter(s => s.status === 'Yolda').length}</strong></div></Card>
+    </section>
+
+    <section className="ships-layout">
+      <Card className="radar-panel" hover={false}>
+        <header className="card-heading">
+          <div>
+            <span className="title-icon"><Waves /></span>
+            <div><h2>AIS radar paneli</h2><p>Real mövqe · store gəmiləri</p></div>
+          </div>
+        </header>
+        <SeaMap />
+      </Card>
+
+      <Card className="ship-table-card" hover={false}>
+        <header>
+          <div><h2>AIS gəmilər</h2><p>{rows.length} gəmi göstərilir</p></div>
+          <div className="table-tools">
+            <label><Search /><input placeholder="Gəmi axtar..." value={q} onChange={e => setQ(e.target.value)} /></label>
+            <select value={status} onChange={e => setStatus(e.target.value)}>
+              <option>Hamısı</option>
+              <option>Lövbərdə</option>
+              <option>Yolda</option>
+              <option>Körpüdə</option>
+            </select>
+            <button type="button" onClick={() => { setQ(''); setStatus('Hamısı') }} aria-label="Filtr sıfırla"><Filter /></button>
+          </div>
+        </header>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Gəmi / IMO</th>
+                <th>Yük</th>
+                <th>Status</th>
+                <th>Kanal</th>
+                <th>Sürət</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(g => (
+                <tr key={g.id} onClick={() => setSelectedShip(g)}>
+                  <td>
+                    <div className="ship-name">
+                      <span><ShipIcon /></span>
+                      <div><strong>{g.ad}</strong><small>{g.id} · {g.bayraq}</small></div>
+                    </div>
+                  </td>
+                  <td><strong>{g.yuk}</strong><small>{g.tonaj.toLocaleString('az-AZ')} ton</small></td>
+                  <td><StatusBadge status={g.status} /></td>
+                  <td>{g.kanal}</td>
+                  <td>{g.suret} düyün</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="empty-table-cell">
+                    Filtrə uyğun gəmi yoxdur
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </section>
+
+    <section className={`ops-layout merged-ops-block${selectedCall ? '' : ' ops-layout-single'}`}>
+      <Card className="ops-queue" hover={false}>
+        <header className="ops-card-header">
+          <div>
+            <h2>Liman çağırışları · VAİS</h2>
+            <p>Yeni sorğular və qurumlararası icazələr</p>
+          </div>
+          <label className="ops-search">
+            <Search />
+            <input value={opsQuery} onChange={e => setOpsQuery(e.target.value)} placeholder="Gəmi, IMO, qeydiyyat..." />
+          </label>
+        </header>
+        <div className="ops-table-wrap">
+          <table className="ops-table">
+            <thead>
+              <tr>
+                <th>Gəmi</th>
+                <th>ETA / ETD</th>
+                <th>Status</th>
+                <th>İcazələr</th>
+                <th>Risk</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {opsRows.map((call, index) => (
+                <motion.tr
+                  key={call.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * .03 }}
+                  className={selectedCall?.id === call.id ? 'selected' : ''}
+                  onClick={() => setSelectedCall(call)}
+                >
+                  <td>
+                    <div className="ops-vessel">
+                      <span><ShipIcon /></span>
+                      <div>
+                        <strong>{call.vessel}</strong>
+                        <small>#{call.id} · {call.callSign} · IMO {call.imo}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{call.eta.split(' ')[1] || call.eta}</strong>
+                    <small>{call.eta.split(' ')[0] || '—'} → {call.etd.split(' ')[1] || call.etd}</small>
+                  </td>
+                  <td><StatusBadge status={call.status} /></td>
+                  <td>
+                    <div className="agency-dots">
+                      {Object.entries(call.clearances).map(([agency, state]) => (
+                        <i key={agency} className={clearanceTone[state]} title={`${agencies[agency as keyof typeof agencies].name}: ${state}`}>
+                          {agency.slice(0, 1)}
+                        </i>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`risk-meter ${call.riskScore > 35 ? 'high' : call.riskScore > 20 ? 'medium' : 'low'}`}>
+                      <i style={{ width: `${Math.min(100, call.riskScore)}%` }} />
+                      <b>{call.riskScore}</b>
+                    </span>
+                  </td>
+                  <td><ChevronRight /></td>
+                </motion.tr>
+              ))}
+              {opsRows.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="empty-table-cell">
+                    Axtarışa uyğun liman çağırışı yoxdur
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      <AnimatePresence mode="wait">
+        {selectedCall && (
+          <motion.aside
+            key={selectedCall.id}
+            className="ops-detail"
+            initial={{ opacity: 0, x: 18 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+          >
+            <Card hover={false}>
+              <header className="detail-hero">
+                <div>
+                  <span className="detail-kicker">PORT CALL #{selectedCall.id}</span>
+                  <h2>{selectedCall.vessel}</h2>
+                  <p>{selectedCall.type} · {selectedCall.flag} · IMO {selectedCall.imo}</p>
+                </div>
+                <button type="button" onClick={() => setSelectedCall(null)} aria-label="Bağla"><X /></button>
+              </header>
+              <div className="ops-ship-visual">
+                <ShipScene3D compact name={selectedCall.vessel} course="074°" />
+              </div>
+              <div className="detail-route">
+                <article><small>Əvvəlki liman</small><strong>{selectedCall.previousPort}</strong></article>
+                <span><i /><b>AZBAK</b><i /></span>
+                <article><small>Növbəti liman</small><strong>{selectedCall.nextPort}</strong></article>
+              </div>
+              <div className="detail-metrics">
+                <article>
+                  <Users />
+                  <span><small>Ekipaj / sərnişin</small><strong>{selectedCall.crew} / {selectedCall.passengers}</strong></span>
+                </article>
+                <article>
+                  <Boxes />
+                  <span><small>Yük / avtomobil</small><strong>{selectedCall.cargoTons.toLocaleString()} t / {selectedCall.vehicles}</strong></span>
+                </article>
+                <article>
+                  <FileScan />
+                  <span><small>Bəyannamə</small><strong>{selectedCall.declarations}</strong></span>
+                </article>
+              </div>
+              <section className="clearance-panel">
+                <header>
+                  <div>
+                    <ShieldAlert />
+                    <span><strong>Qurumlararası icazələr</strong><small>Elektron təsdiq matrisi</small></span>
+                  </div>
+                  <b>{Object.values(selectedCall.clearances).filter(s => s === 'approved').length}/5</b>
+                </header>
+                {Object.entries(selectedCall.clearances).map(([agency, state]) => (
+                  <div className="clearance-row" key={agency}>
+                    <span className={`agency-logo ${state}`}>{agency}</span>
+                    <div>
+                      <strong>{agencies[agency as keyof typeof agencies].name}</strong>
+                      <small>
+                        {state === 'approved' ? 'Elektron təsdiq alınıb' : state === 'review' ? 'Əlavə yoxlama tələb olunur' : 'Qurum cavabı gözlənilir'}
+                      </small>
+                    </div>
+                    <em className={state}>{state === 'approved' ? 'Təsdiq' : state === 'review' ? 'Yoxlama' : 'Gözləyir'}</em>
+                  </div>
+                ))}
+              </section>
+              <Button
+                className="detail-primary"
+                onClick={() => {
+                  navigate(`/qeydiyyat?shipId=IMO${selectedCall.imo}&shipName=${encodeURIComponent(selectedCall.vessel)}`)
+                  toast.success(`${selectedCall.vessel} üçün qeydiyyat başladı`)
+                }}
+              >
+                <Activity /> Vahid əməliyyatı aç <ChevronRight />
+              </Button>
+            </Card>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+    </section>
+
+    <section className="document-intelligence">
+      <header>
+        <div>
+          <span className="title-icon"><FileScan /></span>
+          <div>
+            <h2>Sənəd intellekti</h2>
+            <p>Gömrük bəyannaməsi, manifest, invoys və CMR</p>
+          </div>
+        </div>
+        <span className="ai-chip"><i /> OCR + DATA MATCHING</span>
+      </header>
+      <div className="document-grid">
+        {cargoDocuments.map((document, index) => (
+          <motion.article
+            key={document.id}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: index * .05 }}
+          >
+            <header>
+              <span>{document.type === 'CMR' ? 'CMR' : String(index + 1).padStart(2, '0')}</span>
+              <div><small>{document.type}</small><strong>{document.reference}</strong></div>
+              <em className={document.state === 'Doğrulanıb' ? 'verified' : 'processing'}>{document.state}</em>
+            </header>
+            <dl>
+              <div><dt>Marşrut</dt><dd>{document.origin} → {document.destination}</dd></div>
+              <div><dt>HS kod</dt><dd>{document.hsCode}</dd></div>
+              <div><dt>Ümumi / xalis</dt><dd>{document.grossKg.toLocaleString()} / {document.netKg.toLocaleString()} kq</dd></div>
+              <div><dt>Dəyər</dt><dd>{document.value.toLocaleString()} {document.currency}</dd></div>
+            </dl>
+            <footer><span>{document.consignor}</span><ChevronRight /></footer>
+          </motion.article>
+        ))}
+      </div>
+    </section>
+
+    <section className="source-ribbon">
+      <div>
+        <Anchor />
+        <span><strong>Məlumat mənbələri</strong><small>AIS store + VAİS port calls</small></span>
+      </div>
+      {dataSources.map(source => (
+        <article key={source.name}>
+          <span><strong>{source.name}</strong><small>{source.description}</small></span>
+          <em>{source.kind}</em>
+        </article>
+      ))}
+    </section>
+
+    <Modal
+      open={!!selectedShip}
+      onClose={() => {
+        setSelectedShip(null)
+        if (urlShipId) setSearchParams({})
+      }}
+      title={selectedShip?.ad || ''}
+    >
+      {selectedShip && (
+        <div className="modal-detail">
+          <div className="ship-visual premium-ship-visual">
+            <ShipScene3D compact name={selectedShip.ad} course={`${Math.round(selectedShip.suret * 6)}°`} />
+          </div>
+          <StatusBadge status={selectedShip.status} />
+          <dl>
+            <div><dt>IMO</dt><dd>{selectedShip.id}</dd></div>
+            <div><dt>Mənşə</dt><dd>{selectedShip.menshe}</dd></div>
+            <div><dt>Yük</dt><dd>{selectedShip.yuk}</dd></div>
+            <div><dt>Tonaj</dt><dd>{selectedShip.tonaj.toLocaleString()} ton</dd></div>
+            <div><dt>Kanal</dt><dd>{selectedShip.kanal}</dd></div>
+            <div><dt>Sürət</dt><dd>{selectedShip.suret} düyün</dd></div>
+          </dl>
+          <Button onClick={() => {
+            navigate(`/qeydiyyat?shipId=${selectedShip.id}`)
+            setSelectedShip(null)
+          }}>
+            Əməliyyata başla
+          </Button>
+        </div>
+      )}
+    </Modal>
+
+    <Modal open={newShipModalOpen} onClose={() => setNewShipModalOpen(false)} title="Yeni gəmi əlavə et">
+      <form onSubmit={handleCreateShip} className="new-ship-form">
+        <label>Gəmi adı<input required value={newShipName} onChange={e => setNewShipName(e.target.value)} placeholder="Məsələn: Əli Həsənov" /></label>
+        <label>IMO Kodu<input required value={newShipImo} onChange={e => setNewShipImo(e.target.value.toUpperCase())} placeholder="Məsələn: IMO9988776" /></label>
+        <label>Növü<input required value={newShipType} onChange={e => setNewShipType(e.target.value)} /></label>
+        <label>Bayraq<input required value={newShipFlag} onChange={e => setNewShipFlag(e.target.value)} /></label>
+        <label>Yük növü<input required value={newShipCargo} onChange={e => setNewShipCargo(e.target.value)} /></label>
+        <label>Tonaj (ton)<input type="number" required value={newShipTonnage} onChange={e => setNewShipTonnage(e.target.value)} /></label>
+        <label>Status
+          <select value={newShipStatus} onChange={e => setNewShipStatus(e.target.value as typeof newShipStatus)}>
+            <option value="Lövbərdə">Lövbərdə</option>
+            <option value="Yolda">Yolda</option>
+            <option value="Körpüdə">Körpüdə</option>
+          </select>
+        </label>
+        <label>Kanal<input required value={newShipChannel} onChange={e => setNewShipChannel(e.target.value)} /></label>
+        <label>Sürət (düyün)<input type="number" step="0.1" required value={newShipSpeed} onChange={e => setNewShipSpeed(e.target.value)} /></label>
+        <div className="new-ship-form-actions">
+          <Button type="button" variant="ghost" onClick={() => setNewShipModalOpen(false)}>Ləğv et</Button>
+          <Button type="submit"><Plus /> Əlavə et</Button>
+        </div>
+      </form>
+    </Modal>
+  </>
 }

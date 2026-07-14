@@ -34,3 +34,4 @@ screenshots/
 
 # misc
 .DS_Store
+.vercel

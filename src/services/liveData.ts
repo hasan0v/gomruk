@@ -9,7 +9,19 @@ export type LiveWeather = {
 export type LiveRates = {
   usdToAzn: number
   usdToEur: number
+  /** 1 vahid valyuta → AZN */
+  toAzn: Record<string, number>
   fetchedAt: string
+}
+
+const FALLBACK_USD_RATES: Record<string, number> = {
+  USD: 1,
+  EUR: 0.92,
+  GBP: 0.79,
+  TRY: 34.5,
+  RUB: 92,
+  CNY: 7.25,
+  AZN: 1.7,
 }
 
 const timeout = (ms: number) => {
@@ -34,6 +46,25 @@ export async function fetchAlatWeather(): Promise<LiveWeather> {
   } finally { request.clear() }
 }
 
+function buildRates(usdBase: Record<string, number>): LiveRates {
+  const aznPerUsd = usdBase.AZN
+  if (!aznPerUsd) throw new Error('AZN məzənnəsi yoxdur')
+  const codes = ['USD', 'EUR', 'GBP', 'TRY', 'RUB', 'CNY'] as const
+  const toAzn: Record<string, number> = {}
+  for (const code of codes) {
+    const perUsd = code === 'USD' ? 1 : usdBase[code]
+    if (!perUsd) continue
+    // 1 unit of foreign currency in AZN
+    toAzn[code] = code === 'USD' ? aznPerUsd : aznPerUsd / perUsd
+  }
+  return {
+    usdToAzn: aznPerUsd,
+    usdToEur: usdBase.EUR ? aznPerUsd / usdBase.EUR : toAzn.EUR,
+    toAzn,
+    fetchedAt: new Date().toISOString(),
+  }
+}
+
 export async function fetchExchangeRates(): Promise<LiveRates> {
   const request = timeout(7000)
   try {
@@ -41,6 +72,10 @@ export async function fetchExchangeRates(): Promise<LiveRates> {
     if (!response.ok) throw new Error('Məzənnə API cavab vermədi')
     const data = await response.json() as { rates: Record<string, number> }
     if (!data.rates.AZN || !data.rates.EUR) throw new Error('Məzənnə məlumatı natamamdır')
-    return { usdToAzn: data.rates.AZN, usdToEur: data.rates.EUR, fetchedAt: new Date().toISOString() }
-  } finally { request.clear() }
+    return buildRates(data.rates)
+  } catch {
+    return buildRates(FALLBACK_USD_RATES)
+  } finally {
+    request.clear()
+  }
 }
